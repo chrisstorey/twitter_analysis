@@ -2,6 +2,8 @@ import re
 import tweepy
 from tweepy import OAuthHandler
 from textblob import TextBlob
+from datetime import datetime
+from dateutil.parser import parse
 from keys import TWITTER_OAUTH_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_CONSUMER_SECRET, TWITTER_CONSUMER_KEY
 
 class TwitterClient(object):
@@ -53,6 +55,28 @@ class TwitterClient(object):
         else:
             return 'negative'
 
+
+    def get_tweet_sentiment_score(self, tweet):
+        '''
+        Utility function to classify sentiment of passed tweet
+        using textblob's sentiment method
+        '''
+        # create TextBlob object of passed tweet text
+        analysis = TextBlob(self.clean_tweet(tweet))
+        return analysis.sentiment.polarity
+
+    def get_tweet_subjectivity(self, tweet):
+        '''
+        Utility function to classify subjectivity of passed tweet
+        using textblob's sentiment method
+        '''
+        # create TextBlob object of passed tweet text
+        analysis = TextBlob(self.clean_tweet(tweet))
+        # set sentiment
+        return analysis.sentiment.subjectivity
+
+
+
     def get_tweets(self, query, count = 10):
         '''
         Main function to fetch tweets and parse them.
@@ -67,13 +91,33 @@ class TwitterClient(object):
             # parsing tweets one by one
             for tweet in fetched_tweets:
                 # empty dictionary to store required params of a tweet
+                #print(tweet)
                 parsed_tweet = {}
 
                 # saving text of tweet
                 parsed_tweet['text'] = tweet.text
+
                 # saving sentiment of tweet
                 parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet.text)
+                parsed_tweet['subjectivity'] = self.get_tweet_subjectivity(tweet.text)
+                parsed_tweet['sentiment_score'] = self.get_tweet_sentiment_score(tweet.text)
 
+                parsed_tweet['created_at'] = parse(str(tweet.created_at))
+                #parsed_tweet['name'] = tweet.
+                #parsed_tweet['screen_name'] = tweet.screen_name
+                parsed_tweet['in_reply_to_screen_name'] = tweet.in_reply_to_screen_name
+                parsed_tweet['author_screen_name'] = tweet.author.screen_name
+                parsed_tweet['author_name'] = tweet.author.name
+
+
+                print("------------------------------------------------------------------------")
+                print(parsed_tweet['created_at'], parsed_tweet['author_screen_name'], parsed_tweet['author_name'])
+                print(parsed_tweet['in_reply_to_screen_name'])
+
+                print(parsed_tweet['text'])
+                print(parsed_tweet['sentiment_score'], parsed_tweet['subjectivity'])
+                print(parsed_tweet['sentiment'])
+                print("------------------------------------------------------------------------\n")
                 # appending parsed tweet to tweets list
                 if tweet.retweet_count > 0:
                     # if tweet has retweets, ensure that it is appended only once
@@ -90,10 +134,10 @@ class TwitterClient(object):
             print("Error : " + str(e))
 
 def main():
-    # creating object of TwitterClient Class
+    # creating object of TwitterClient Classg
     api = TwitterClient()
     # calling function to get tweets
-    tweets = api.get_tweets(query = 'transpennine', count = 20)
+    tweets = api.get_tweets(query = 'tpexpress', count = 100)
 
     # picking positive tweets from tweets
     ptweets = [tweet for tweet in tweets if tweet['sentiment'] == 'positive']
